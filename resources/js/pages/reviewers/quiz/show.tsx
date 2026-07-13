@@ -7,6 +7,8 @@ import type { IdentificationResult } from '@/components/reviewers/quiz-identific
 import QuizMultipleChoice from '@/components/reviewers/quiz-multiple-choice';
 import type { MultipleChoiceResult } from '@/components/reviewers/quiz-multiple-choice';
 import QuizResults from '@/components/reviewers/quiz-results';
+import QuizTimer from '@/components/reviewers/quiz-timer';
+import { useQuizTimer } from '@/hooks/use-quiz-timer';
 import {
     index as reviewersIndex,
     show as showReviewer,
@@ -24,13 +26,26 @@ type ShowQuizProps = {
     reviewer: QuizReviewer;
     type: QuizType;
     count: number;
+    timeLimitMinutes: number | null;
 };
 
 type Result = MultipleChoiceResult | IdentificationResult | EnumerationResult;
 
-export default function ShowQuiz({ reviewer, type, count }: ShowQuizProps) {
+export default function ShowQuiz({
+    reviewer,
+    type,
+    count,
+    timeLimitMinutes,
+}: ShowQuizProps) {
     const [attempt, setAttempt] = useState(0);
     const [result, setResult] = useState<Result | null>(null);
+
+    const secondsLeft = useQuizTimer(
+        timeLimitMinutes ? timeLimitMinutes * 60 : null,
+        attempt,
+        result !== null,
+    );
+    const timeExpired = timeLimitMinutes !== null && secondsLeft === 0;
 
     const retake = () => {
         setResult(null);
@@ -49,12 +64,17 @@ export default function ShowQuiz({ reviewer, type, count }: ShowQuizProps) {
                         </p>
                         <h1 className="mt-2 text-3xl font-semibold">Quiz</h1>
                     </div>
-                    <Link
-                        href={showReviewer(reviewer.id)}
-                        className="text-sm text-muted-foreground hover:text-foreground"
-                    >
-                        Exit quiz
-                    </Link>
+                    <div className="flex items-center gap-4">
+                        {timeLimitMinutes !== null &&
+                            secondsLeft !== null &&
+                            !result && <QuizTimer secondsLeft={secondsLeft} />}
+                        <Link
+                            href={showReviewer(reviewer.id)}
+                            className="text-sm text-muted-foreground hover:text-foreground"
+                        >
+                            Exit quiz
+                        </Link>
+                    </div>
                 </div>
 
                 {result ? (
@@ -68,6 +88,7 @@ export default function ShowQuiz({ reviewer, type, count }: ShowQuizProps) {
                         key={attempt}
                         items={reviewer.items}
                         count={count}
+                        timeExpired={timeExpired}
                         onFinish={setResult}
                     />
                 ) : type === 'identification' ? (
@@ -75,6 +96,7 @@ export default function ShowQuiz({ reviewer, type, count }: ShowQuizProps) {
                         key={attempt}
                         items={reviewer.items}
                         count={count}
+                        timeExpired={timeExpired}
                         onFinish={setResult}
                     />
                 ) : (
@@ -82,6 +104,7 @@ export default function ShowQuiz({ reviewer, type, count }: ShowQuizProps) {
                         key={attempt}
                         reviewerTitle={reviewer.title}
                         items={reviewer.items}
+                        timeExpired={timeExpired}
                         onFinish={setResult}
                     />
                 )}

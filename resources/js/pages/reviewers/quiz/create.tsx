@@ -2,6 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import { CircleCheck, ListOrdered, Type } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
@@ -42,12 +43,15 @@ export default function CreateQuiz({ reviewer, typeOptions }: CreateQuizProps) {
         canUseMultipleChoice ? 'multiple_choice' : 'identification',
     );
     const [count, setCount] = useState(reviewer.items_count);
+    const [timerEnabled, setTimerEnabled] = useState(false);
+    const [minutes, setMinutes] = useState(5);
 
     const showsCount = type !== 'enumeration';
     const clampedCount = Math.min(
         Math.max(count, 1),
         Math.max(reviewer.items_count, 1),
     );
+    const clampedMinutes = Math.min(Math.max(minutes, 1), 120);
 
     return (
         <>
@@ -133,6 +137,43 @@ export default function CreateQuiz({ reviewer, typeOptions }: CreateQuizProps) {
                         </p>
                     )}
 
+                    <div className="grid gap-3">
+                        <label className="flex items-center gap-3 text-sm">
+                            <Checkbox
+                                checked={timerEnabled}
+                                onCheckedChange={(checked) =>
+                                    setTimerEnabled(checked === true)
+                                }
+                            />
+                            Enable timer
+                        </label>
+
+                        {timerEnabled && (
+                            <div className="grid gap-2">
+                                <Label htmlFor="quiz-minutes">
+                                    Time limit (minutes)
+                                </Label>
+                                <Input
+                                    id="quiz-minutes"
+                                    type="number"
+                                    min={1}
+                                    max={120}
+                                    value={minutes}
+                                    onChange={(event) =>
+                                        setMinutes(
+                                            Number(event.target.value) || 1,
+                                        )
+                                    }
+                                    className="max-w-32"
+                                />
+                                <p className="text-sm text-muted-foreground">
+                                    The quiz auto-finishes when time runs out,
+                                    scoring what you&apos;ve answered so far.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
                     <div className="flex flex-wrap items-center gap-3">
                         <Button asChild>
                             <Link
@@ -140,6 +181,12 @@ export default function CreateQuiz({ reviewer, typeOptions }: CreateQuizProps) {
                                     query: {
                                         type,
                                         count: String(clampedCount),
+                                        ...(timerEnabled
+                                            ? {
+                                                  minutes:
+                                                      String(clampedMinutes),
+                                              }
+                                            : {}),
                                     },
                                 })}
                             >

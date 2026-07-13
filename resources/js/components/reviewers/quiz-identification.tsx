@@ -1,15 +1,16 @@
 import type { FormEvent } from 'react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { buildIdentificationQuestions, normalize } from '@/lib/quiz';
 import { cn } from '@/lib/utils';
-import type { QuizItem } from '@/types';
+import type { IdentificationQuestion, QuizItem } from '@/types';
 
 export type IdentificationResult = {
     type: 'identification';
     total: number;
     correct: number;
+    timedOut?: boolean;
     reviewed: {
         prompt: string;
         givenLabel: string | null;
@@ -21,17 +22,28 @@ export type IdentificationResult = {
 type QuizIdentificationProps = {
     items: QuizItem[];
     count: number;
+    timeExpired?: boolean;
     onFinish: (result: IdentificationResult) => void;
 };
 
 export default function QuizIdentification({
     items,
     count,
+    timeExpired = false,
     onFinish,
 }: QuizIdentificationProps) {
-    const [questions] = useState(() =>
-        buildIdentificationQuestions(items, count),
-    );
+    // Questions are shuffled with Math.random(), which must not run during
+    // the initial render — under SSR that render is compared against the
+    // server's own (differently) shuffled output, causing a hydration
+    // mismatch. Generating them in an effect keeps the first render
+    // deterministic (empty) on both server and client.
+    const [questions, setQuestions] = useState<IdentificationQuestion[]>([]);
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional client-only randomization, see comment above
+        setQuestions(buildIdentificationQuestions(items, count));
+    }, [items, count]);
+
     const [index, setIndex] = useState(0);
     const [value, setValue] = useState('');
     const [checked, setChecked] = useState(false);
@@ -39,9 +51,57 @@ export default function QuizIdentification({
         [],
     );
 
-    const question = questions[index];
+    const question = questions[index] as IdentificationQuestion | undefined;
     const isCorrect =
-        checked && normalize(value) === normalize(question.answer);
+        checked &&
+        !!question &&
+        normalize(value) === normalize(question.answer);
+
+    const hasFinalizedRef = useRef(false);
+
+    useEffect(() => {
+        if (!timeExpired || hasFinalizedRef.current || questions.length === 0) {
+            return;
+        }
+
+        hasFinalizedRef.current = true;
+
+        const remaining = questions
+            .slice(index)
+            .map((remainingQuestion, offset) => {
+                if (offset === 0 && value.trim().length > 0) {
+                    return {
+                        prompt: remainingQuestion.prompt,
+                        givenLabel: value,
+                        correctLabel: remainingQuestion.answer,
+                        isCorrect:
+                            normalize(value) ===
+                            normalize(remainingQuestion.answer),
+                    };
+                }
+
+                return {
+                    prompt: remainingQuestion.prompt,
+                    givenLabel: null,
+                    correctLabel: remainingQuestion.answer,
+                    isCorrect: false,
+                };
+            });
+
+        const finalReviewed = [...reviewed, ...remaining];
+
+        onFinish({
+            type: 'identification',
+            total: questions.length,
+            correct: finalReviewed.filter((item) => item.isCorrect).length,
+            timedOut: true,
+            reviewed: finalReviewed,
+        });
+    }, [timeExpired, questions, index, value, reviewed, onFinish]);
+
+    if (!question) {
+        return null;
+    }
 
     const check = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();

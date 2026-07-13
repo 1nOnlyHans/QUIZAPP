@@ -40,6 +40,11 @@ class ReviewerQuizController extends Controller
         $type = QuizType::tryFrom((string) $request->query('type')) ?? QuizType::MultipleChoice;
         $count = max(1, min($itemsCount, (int) $request->query('count', $itemsCount)));
 
+        $minutesParam = $request->query('minutes');
+        $timeLimitMinutes = is_numeric($minutesParam)
+            ? max(1, min(120, (int) $minutesParam))
+            : null;
+
         return Inertia::render('reviewers/quiz/show', [
             'reviewer' => [
                 'id' => $reviewer->id,
@@ -55,6 +60,7 @@ class ReviewerQuizController extends Controller
             ],
             'type' => $type->value,
             'count' => $count,
+            'timeLimitMinutes' => $timeLimitMinutes,
         ]);
     }
 }

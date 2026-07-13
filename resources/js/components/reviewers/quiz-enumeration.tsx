@@ -1,6 +1,6 @@
 import { Plus, Trash2 } from 'lucide-react';
 import type { FormEvent } from 'react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { buildEnumerationQuestion, scoreEnumeration } from '@/lib/quiz';
@@ -10,6 +10,7 @@ export type EnumerationResult = {
     type: 'enumeration';
     prompt: string;
     expectedCount: number;
+    timedOut?: boolean;
     matched: string[];
     missed: string[];
     extra: string[];
@@ -18,12 +19,14 @@ export type EnumerationResult = {
 type QuizEnumerationProps = {
     reviewerTitle: string;
     items: QuizItem[];
+    timeExpired?: boolean;
     onFinish: (result: EnumerationResult) => void;
 };
 
 export default function QuizEnumeration({
     reviewerTitle,
     items,
+    timeExpired = false,
     onFinish,
 }: QuizEnumerationProps) {
     const [question] = useState(() =>
@@ -57,6 +60,26 @@ export default function QuizEnumeration({
             ...score,
         });
     };
+
+    const hasFinalizedRef = useRef(false);
+
+    useEffect(() => {
+        if (!timeExpired || hasFinalizedRef.current) {
+            return;
+        }
+
+        hasFinalizedRef.current = true;
+
+        const score = scoreEnumeration(question.expectedTerms, entries);
+
+        onFinish({
+            type: 'enumeration',
+            prompt: question.prompt,
+            expectedCount: question.expectedTerms.length,
+            timedOut: true,
+            ...score,
+        });
+    }, [timeExpired, question, entries, onFinish]);
 
     return (
         <form onSubmit={finish} className="mx-auto w-full max-w-2xl space-y-6">

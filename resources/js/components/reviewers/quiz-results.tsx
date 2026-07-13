@@ -22,6 +22,12 @@ export default function QuizResults({
 }: QuizResultsProps) {
     return (
         <div className="mx-auto w-full max-w-2xl space-y-6">
+            {result.timedOut && (
+                <p className="rounded-lg border border-amber-600/30 bg-amber-600/10 p-3 text-center text-sm text-amber-600">
+                    Time&apos;s up — here&apos;s your progress so far.
+                </p>
+            )}
+
             <div className="rounded-xl border border-border bg-card p-8 text-center">
                 <p className="font-mono text-xs font-medium tracking-wide text-muted-foreground uppercase">
                     Score

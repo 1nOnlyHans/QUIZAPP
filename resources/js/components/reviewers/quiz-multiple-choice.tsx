@@ -1,13 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { buildMultipleChoiceQuestions } from '@/lib/quiz';
 import { cn } from '@/lib/utils';
-import type { QuizItem } from '@/types';
+import type { MultipleChoiceQuestion, QuizItem } from '@/types';
 
 export type MultipleChoiceResult = {
     type: 'multiple_choice';
     total: number;
     correct: number;
+    timedOut?: boolean;
     reviewed: {
         prompt: string;
         givenLabel: string | null;
@@ -19,25 +20,86 @@ export type MultipleChoiceResult = {
 type QuizMultipleChoiceProps = {
     items: QuizItem[];
     count: number;
+    timeExpired?: boolean;
     onFinish: (result: MultipleChoiceResult) => void;
 };
 
 export default function QuizMultipleChoice({
     items,
     count,
+    timeExpired = false,
     onFinish,
 }: QuizMultipleChoiceProps) {
-    const [questions] = useState(() =>
-        buildMultipleChoiceQuestions(items, count),
-    );
+    // Questions are shuffled with Math.random(), which must not run during
+    // the initial render — under SSR that render is compared against the
+    // server's own (differently) shuffled output, causing a hydration
+    // mismatch. Generating them in an effect keeps the first render
+    // deterministic (empty) on both server and client.
+    const [questions, setQuestions] = useState<MultipleChoiceQuestion[]>([]);
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional client-only randomization, see comment above
+        setQuestions(buildMultipleChoiceQuestions(items, count));
+    }, [items, count]);
+
     const [index, setIndex] = useState(0);
     const [selected, setSelected] = useState<number | null>(null);
     const [reviewed, setReviewed] = useState<MultipleChoiceResult['reviewed']>(
         [],
     );
 
-    const question = questions[index];
+    const question = questions[index] as MultipleChoiceQuestion | undefined;
     const answered = selected !== null;
+
+    const hasFinalizedRef = useRef(false);
+
+    useEffect(() => {
+        if (!timeExpired || hasFinalizedRef.current || questions.length === 0) {
+            return;
+        }
+
+        hasFinalizedRef.current = true;
+
+        const remaining = questions
+            .slice(index)
+            .map((remainingQuestion, offset) => {
+                if (offset === 0 && selected !== null) {
+                    return {
+                        prompt: remainingQuestion.prompt,
+                        givenLabel: remainingQuestion.options[selected] ?? null,
+                        correctLabel:
+                            remainingQuestion.options[
+                                remainingQuestion.correctIndex
+                            ],
+                        isCorrect: selected === remainingQuestion.correctIndex,
+                    };
+                }
+
+                return {
+                    prompt: remainingQuestion.prompt,
+                    givenLabel: null,
+                    correctLabel:
+                        remainingQuestion.options[
+                            remainingQuestion.correctIndex
+                        ],
+                    isCorrect: false,
+                };
+            });
+
+        const finalReviewed = [...reviewed, ...remaining];
+
+        onFinish({
+            type: 'multiple_choice',
+            total: questions.length,
+            correct: finalReviewed.filter((item) => item.isCorrect).length,
+            timedOut: true,
+            reviewed: finalReviewed,
+        });
+    }, [timeExpired, questions, index, selected, reviewed, onFinish]);
+
+    if (!question) {
+        return null;
+    }
 
     const choose = (optionIndex: number) => {
         if (answered) {

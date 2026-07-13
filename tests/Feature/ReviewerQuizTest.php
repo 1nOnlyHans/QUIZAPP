@@ -58,7 +58,40 @@ class ReviewerQuizTest extends TestCase
                 ->component('reviewers/quiz/show')
                 ->where('type', 'multiple_choice')
                 ->where('count', 2)
+                ->where('timeLimitMinutes', null)
                 ->has('reviewer.items', 2));
+    }
+
+    public function test_quiz_show_clamps_minutes_query_param(): void
+    {
+        $user = User::factory()->create();
+        $course = Course::factory()->for($user)->create();
+        $reviewer = Reviewer::factory()->for($course)->create();
+        $reviewer->items()->create(['term' => 'Alpha', 'definition' => 'First', 'position' => 0]);
+
+        $this
+            ->actingAs($user)
+            ->get(route('reviewers.quiz.show', $reviewer).'?minutes=10')
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('timeLimitMinutes', 10));
+
+        $this
+            ->actingAs($user)
+            ->get(route('reviewers.quiz.show', $reviewer).'?minutes=999')
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('timeLimitMinutes', 120));
+
+        $this
+            ->actingAs($user)
+            ->get(route('reviewers.quiz.show', $reviewer).'?minutes=0')
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('timeLimitMinutes', 1));
+
+        $this
+            ->actingAs($user)
+            ->get(route('reviewers.quiz.show', $reviewer).'?minutes=abc')
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('timeLimitMinutes', null));
     }
 
     public function test_quiz_show_clamps_count_query_param(): void
