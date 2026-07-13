@@ -3,6 +3,8 @@
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LessonController;
+use App\Http\Controllers\ReviewerController;
+use App\Http\Controllers\ReviewerQuizController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
@@ -24,6 +26,19 @@ Route::middleware(['auth', 'verified'])->scopeBindings()->group(function () {
         ->name('courses.lessons.inline');
     Route::get('courses/{course}/lessons/{lesson}/download', [LessonController::class, 'download'])
         ->name('courses.lessons.download');
+
+    Route::resource('reviewers', ReviewerController::class)
+        ->only(['index', 'show', 'edit', 'update', 'destroy']);
+
+    Route::get('courses/{course}/reviewers/create', [ReviewerController::class, 'create'])
+        ->name('courses.reviewers.create');
+    Route::post('courses/{course}/reviewers', [ReviewerController::class, 'store'])
+        ->name('courses.reviewers.store');
+
+    Route::get('reviewers/{reviewer}/quiz/create', [ReviewerQuizController::class, 'create'])
+        ->name('reviewers.quiz.create');
+    Route::get('reviewers/{reviewer}/quiz', [ReviewerQuizController::class, 'show'])
+        ->name('reviewers.quiz.show');
 });
 
 require __DIR__.'/settings.php';

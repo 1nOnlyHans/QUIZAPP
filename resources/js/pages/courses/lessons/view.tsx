@@ -1,5 +1,11 @@
 import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, Download, ExternalLink, Eye, FileWarning } from 'lucide-react';
+import {
+    ArrowLeft,
+    Download,
+    ExternalLink,
+    Eye,
+    FileWarning,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { index as coursesIndex, show as showCourse } from '@/routes/courses';
 import type { CourseSummary, Lesson } from '@/types';
@@ -100,7 +106,11 @@ export default function LessonView({
 
                         <div className="flex flex-wrap items-center gap-2">
                             <Button asChild variant="outline">
-                                <a href={viewer.inline_url} target="_blank" rel="noreferrer">
+                                <a
+                                    href={viewer.inline_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                >
                                     <ExternalLink />
                                     Open tab
                                 </a>

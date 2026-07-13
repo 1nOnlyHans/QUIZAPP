@@ -21,9 +21,7 @@ export default function EditCourse({
                     <p className="font-mono text-xs font-medium text-muted-foreground uppercase">
                         {course.subject_code}
                     </p>
-                    <h1 className="mt-2 text-3xl font-semibold">
-                        Edit course
-                    </h1>
+                    <h1 className="mt-2 text-3xl font-semibold">Edit course</h1>
                     <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
                         Update the subject details students see in their course
                         library.

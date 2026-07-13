@@ -144,8 +144,7 @@ function RecentLessonItem({ lesson }: { lesson: DashboardRecentLesson }) {
                     </p>
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                    {lesson.course.subject_code} /{' '}
-                    {lesson.academic_period.name}
+                    {lesson.course.subject_code} / {lesson.academic_period.name}
                 </p>
             </div>
             <p className="shrink-0 text-xs text-muted-foreground">

@@ -123,7 +123,9 @@ export default function CourseForm({
                     {course ? 'Save changes' : 'Create course'}
                 </Button>
                 <Button asChild variant="outline">
-                    <Link href={course ? showCourse(course.id) : coursesIndex()}>
+                    <Link
+                        href={course ? showCourse(course.id) : coursesIndex()}
+                    >
                         Cancel
                     </Link>
                 </Button>

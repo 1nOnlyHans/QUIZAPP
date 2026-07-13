@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use App\Models\Course;
 use App\Models\Lesson;
+use App\Models\Reviewer;
 use App\Policies\CoursePolicy;
 use App\Policies\LessonPolicy;
+use App\Policies\ReviewerPolicy;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\DevCommands;
 use Illuminate\Support\Facades\Date;
@@ -31,6 +33,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::policy(Course::class, CoursePolicy::class);
         Gate::policy(Lesson::class, LessonPolicy::class);
+        Gate::policy(Reviewer::class, ReviewerPolicy::class);
 
         if (PHP_OS_FAMILY === 'Windows') {
             DevCommands::except('logs');

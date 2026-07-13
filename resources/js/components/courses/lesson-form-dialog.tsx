@@ -73,11 +73,10 @@ export default function LessonFormDialog({
         event.preventDefault();
 
         if (lesson) {
-            const target = updateLesson
-                .form({
-                    course: course.id,
-                    lesson: lesson.id,
-                });
+            const target = updateLesson.form({
+                course: course.id,
+                lesson: lesson.id,
+            });
 
             form.post(target.action, {
                 forceFormData: true,
@@ -162,7 +161,7 @@ export default function LessonFormDialog({
                                 form.setData('description', event.target.value)
                             }
                             rows={3}
-                            className="border-input bg-card placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/20 min-h-24 w-full rounded-md border px-3 py-2 text-sm shadow-[0_1px_1px_rgba(0,0,0,0.04)] outline-none focus-visible:ring-[3px]"
+                            className="min-h-24 w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-[0_1px_1px_rgba(0,0,0,0.04)] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/20"
                             placeholder="Optional notes about this material"
                             aria-invalid={!!form.errors.description}
                         />
@@ -235,7 +234,9 @@ export default function LessonFormDialog({
 
                     {form.data.material_type === 'file' ? (
                         <div className="grid gap-2">
-                            <Label htmlFor={`lesson-file-${lesson?.id ?? 'new'}`}>
+                            <Label
+                                htmlFor={`lesson-file-${lesson?.id ?? 'new'}`}
+                            >
                                 File
                             </Label>
                             {lesson?.file_name && (
@@ -260,7 +261,9 @@ export default function LessonFormDialog({
                         </div>
                     ) : (
                         <div className="grid gap-2">
-                            <Label htmlFor={`lesson-link-${lesson?.id ?? 'new'}`}>
+                            <Label
+                                htmlFor={`lesson-link-${lesson?.id ?? 'new'}`}
+                            >
                                 External URL
                             </Label>
                             <div className="relative">

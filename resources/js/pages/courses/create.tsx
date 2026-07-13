@@ -1,6 +1,9 @@
 import { Head } from '@inertiajs/react';
 import CourseForm from '@/components/courses/course-form';
-import { create as createCourse, index as coursesIndex } from '@/routes/courses';
+import {
+    create as createCourse,
+    index as coursesIndex,
+} from '@/routes/courses';
 import type { CourseCategory, SelectOption } from '@/types';
 
 type CreateCourseProps = {

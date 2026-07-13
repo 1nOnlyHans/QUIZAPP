@@ -5,6 +5,8 @@ import {
     ExternalLink,
     FileText,
     LinkIcon,
+    NotebookText,
+    Plus,
     SquarePen,
     Trash2,
 } from 'lucide-react';
@@ -17,6 +19,8 @@ import {
     index as coursesIndex,
 } from '@/routes/courses';
 import { destroy as destroyLesson } from '@/routes/courses/lessons';
+import { create as createReviewer } from '@/routes/courses/reviewers';
+import { show as showReviewer } from '@/routes/reviewers';
 import type {
     AcademicPeriod,
     CourseSummary,
@@ -25,10 +29,18 @@ import type {
     SelectOption,
 } from '@/types';
 
+type CourseReviewer = {
+    id: number;
+    title: string;
+    items_count: number;
+    lessons_count: number;
+};
+
 type ShowCourseProps = {
     course: CourseSummary;
     periods: AcademicPeriod[];
     lessons: Lesson[];
+    reviewers: CourseReviewer[];
     materialTypeOptions: SelectOption<LessonMaterialType>[];
 };
 
@@ -52,6 +64,7 @@ export default function ShowCourse({
     course,
     periods,
     lessons,
+    reviewers,
     materialTypeOptions,
 }: ShowCourseProps) {
     const lessonsByPeriod = periods.map((period) => ({
@@ -141,159 +154,217 @@ export default function ShowCourse({
                     </div>
                 </section>
 
-                <div className="grid gap-4">
-                    {lessonsByPeriod.map(({ period, lessons: periodLessons }) => (
-                        <section
-                            key={period.id}
-                            className="rounded-lg border border-border bg-card"
-                        >
-                            <div className="flex items-center justify-between gap-3 border-b border-border p-4">
-                                <div>
-                                    <h2 className="text-lg font-semibold">
-                                        {period.name}
-                                    </h2>
-                                    <p className="text-sm text-muted-foreground">
-                                        {periodLessons.length}{' '}
-                                        {periodLessons.length === 1
-                                            ? 'material'
-                                            : 'materials'}
-                                    </p>
-                                </div>
+                <section className="rounded-lg border border-border bg-card">
+                    <div className="flex items-center justify-between gap-3 border-b border-border p-4">
+                        <div className="flex items-center gap-2">
+                            <NotebookText className="size-5 text-muted-foreground" />
+                            <div>
+                                <h2 className="text-lg font-semibold">
+                                    Reviewers
+                                </h2>
+                                <p className="text-sm text-muted-foreground">
+                                    {reviewers.length}{' '}
+                                    {reviewers.length === 1
+                                        ? 'reviewer'
+                                        : 'reviewers'}
+                                </p>
                             </div>
+                        </div>
+                        <Button asChild size="sm">
+                            <Link href={createReviewer(course.id)}>
+                                <Plus />
+                                Create reviewer
+                            </Link>
+                        </Button>
+                    </div>
 
-                            {periodLessons.length === 0 ? (
-                                <div className="p-6 text-sm text-muted-foreground">
-                                    No lessons added for this period yet.
+                    {reviewers.length === 0 ? (
+                        <div className="p-6 text-sm text-muted-foreground">
+                            No reviewers yet. Create one to collect terms and
+                            definitions from this course.
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-border">
+                            {reviewers.map((reviewer) => (
+                                <Link
+                                    key={reviewer.id}
+                                    href={showReviewer(reviewer.id)}
+                                    className="flex items-center justify-between gap-3 p-4 hover:bg-accent"
+                                >
+                                    <span className="font-medium">
+                                        {reviewer.title}
+                                    </span>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <Badge variant="secondary">
+                                            {reviewer.items_count} items
+                                        </Badge>
+                                        <Badge variant="outline">
+                                            {reviewer.lessons_count} lessons
+                                        </Badge>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    )}
+                </section>
+
+                <div className="grid gap-4">
+                    {lessonsByPeriod.map(
+                        ({ period, lessons: periodLessons }) => (
+                            <section
+                                key={period.id}
+                                className="rounded-lg border border-border bg-card"
+                            >
+                                <div className="flex items-center justify-between gap-3 border-b border-border p-4">
+                                    <div>
+                                        <h2 className="text-lg font-semibold">
+                                            {period.name}
+                                        </h2>
+                                        <p className="text-sm text-muted-foreground">
+                                            {periodLessons.length}{' '}
+                                            {periodLessons.length === 1
+                                                ? 'material'
+                                                : 'materials'}
+                                        </p>
+                                    </div>
                                 </div>
-                            ) : (
-                                <div className="divide-y divide-border">
-                                    {periodLessons.map((lesson) => (
-                                        <article
-                                            key={lesson.id}
-                                            className="flex flex-col gap-4 p-4 lg:flex-row lg:items-center lg:justify-between"
-                                        >
-                                            <div className="min-w-0 flex-1">
+
+                                {periodLessons.length === 0 ? (
+                                    <div className="p-6 text-sm text-muted-foreground">
+                                        No lessons added for this period yet.
+                                    </div>
+                                ) : (
+                                    <div className="divide-y divide-border">
+                                        {periodLessons.map((lesson) => (
+                                            <article
+                                                key={lesson.id}
+                                                className="flex flex-col gap-4 p-4 lg:flex-row lg:items-center lg:justify-between"
+                                            >
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        {lesson.material_type ===
+                                                        'file' ? (
+                                                            <FileText className="size-4 text-muted-foreground" />
+                                                        ) : (
+                                                            <LinkIcon className="size-4 text-muted-foreground" />
+                                                        )}
+                                                        <h3 className="font-medium">
+                                                            {lesson.title}
+                                                        </h3>
+                                                        <Badge variant="outline">
+                                                            {
+                                                                lesson.material_type_label
+                                                            }
+                                                        </Badge>
+                                                    </div>
+                                                    {lesson.description && (
+                                                        <p className="mt-2 text-sm text-muted-foreground">
+                                                            {lesson.description}
+                                                        </p>
+                                                    )}
+                                                    <p className="mt-2 text-sm text-muted-foreground">
+                                                        {lesson.material_type ===
+                                                        'file'
+                                                            ? [
+                                                                  lesson.file_name,
+                                                                  fileSize(
+                                                                      lesson.file_size,
+                                                                  ),
+                                                              ]
+                                                                  .filter(
+                                                                      Boolean,
+                                                                  )
+                                                                  .join(' - ')
+                                                            : lesson.external_url}
+                                                    </p>
+                                                </div>
+
                                                 <div className="flex flex-wrap items-center gap-2">
                                                     {lesson.material_type ===
-                                                    'file' ? (
-                                                        <FileText className="size-4 text-muted-foreground" />
-                                                    ) : (
-                                                        <LinkIcon className="size-4 text-muted-foreground" />
-                                                    )}
-                                                    <h3 className="font-medium">
-                                                        {lesson.title}
-                                                    </h3>
-                                                    <Badge variant="outline">
-                                                        {
-                                                            lesson.material_type_label
-                                                        }
-                                                    </Badge>
-                                                </div>
-                                                {lesson.description && (
-                                                    <p className="mt-2 text-sm text-muted-foreground">
-                                                        {lesson.description}
-                                                    </p>
-                                                )}
-                                                <p className="mt-2 text-sm text-muted-foreground">
+                                                        'file' &&
+                                                        lesson.preview_url && (
+                                                            <Button
+                                                                asChild
+                                                                variant="outline"
+                                                                size="sm"
+                                                            >
+                                                                <Link
+                                                                    href={
+                                                                        lesson.preview_url
+                                                                    }
+                                                                >
+                                                                    <Eye />
+                                                                    View
+                                                                </Link>
+                                                            </Button>
+                                                        )}
                                                     {lesson.material_type ===
-                                                    'file'
-                                                        ? [
-                                                              lesson.file_name,
-                                                              fileSize(
-                                                                  lesson.file_size,
-                                                              ),
-                                                          ]
-                                                              .filter(Boolean)
-                                                              .join(' - ')
-                                                        : lesson.external_url}
-                                                </p>
-                                            </div>
-
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                {lesson.material_type ===
-                                                    'file' &&
-                                                    lesson.preview_url && (
-                                                        <Button
-                                                            asChild
-                                                            variant="outline"
-                                                            size="sm"
-                                                        >
-                                                            <Link
-                                                                href={
-                                                                    lesson.preview_url
-                                                                }
+                                                        'file' &&
+                                                        lesson.download_url && (
+                                                            <Button
+                                                                asChild
+                                                                variant="outline"
+                                                                size="sm"
                                                             >
-                                                                <Eye />
-                                                                View
-                                                            </Link>
-                                                        </Button>
-                                                    )}
-                                                {lesson.material_type ===
-                                                    'file' &&
-                                                    lesson.download_url && (
-                                                        <Button
-                                                            asChild
-                                                            variant="outline"
-                                                            size="sm"
-                                                        >
-                                                            <a
-                                                                href={
-                                                                    lesson.download_url
-                                                                }
+                                                                <a
+                                                                    href={
+                                                                        lesson.download_url
+                                                                    }
+                                                                >
+                                                                    <Download />
+                                                                    Download
+                                                                </a>
+                                                            </Button>
+                                                        )}
+                                                    {lesson.material_type ===
+                                                        'link' &&
+                                                        lesson.external_url && (
+                                                            <Button
+                                                                asChild
+                                                                variant="outline"
+                                                                size="sm"
                                                             >
-                                                                <Download />
-                                                                Download
-                                                            </a>
-                                                        </Button>
-                                                    )}
-                                                {lesson.material_type ===
-                                                    'link' &&
-                                                    lesson.external_url && (
-                                                        <Button
-                                                            asChild
-                                                            variant="outline"
-                                                            size="sm"
-                                                        >
-                                                            <a
-                                                                href={
-                                                                    lesson.external_url
-                                                                }
-                                                                target="_blank"
-                                                                rel="noreferrer"
-                                                            >
-                                                                <ExternalLink />
-                                                                Open
-                                                            </a>
-                                                        </Button>
-                                                    )}
-                                                <LessonFormDialog
-                                                    course={course}
-                                                    periods={periods}
-                                                    materialTypeOptions={
-                                                        materialTypeOptions
-                                                    }
-                                                    lesson={lesson}
-                                                />
-                                                <Button
-                                                    type="button"
-                                                    variant="destructive"
-                                                    size="sm"
-                                                    onClick={() =>
-                                                        requestLessonDelete(
-                                                            lesson,
-                                                        )
-                                                    }
-                                                >
-                                                    <Trash2 />
-                                                    Delete
-                                                </Button>
-                                            </div>
-                                        </article>
-                                    ))}
-                                </div>
-                            )}
-                        </section>
-                    ))}
+                                                                <a
+                                                                    href={
+                                                                        lesson.external_url
+                                                                    }
+                                                                    target="_blank"
+                                                                    rel="noreferrer"
+                                                                >
+                                                                    <ExternalLink />
+                                                                    Open
+                                                                </a>
+                                                            </Button>
+                                                        )}
+                                                    <LessonFormDialog
+                                                        course={course}
+                                                        periods={periods}
+                                                        materialTypeOptions={
+                                                            materialTypeOptions
+                                                        }
+                                                        lesson={lesson}
+                                                    />
+                                                    <Button
+                                                        type="button"
+                                                        variant="destructive"
+                                                        size="sm"
+                                                        onClick={() =>
+                                                            requestLessonDelete(
+                                                                lesson,
+                                                            )
+                                                        }
+                                                    >
+                                                        <Trash2 />
+                                                        Delete
+                                                    </Button>
+                                                </div>
+                                            </article>
+                                        ))}
+                                    </div>
+                                )}
+                            </section>
+                        ),
+                    )}
                 </div>
             </div>
         </>

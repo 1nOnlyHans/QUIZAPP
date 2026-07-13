@@ -9,6 +9,7 @@ use App\Http\Requests\Courses\UpdateCourseRequest;
 use App\Models\AcademicPeriod;
 use App\Models\Course;
 use App\Models\Lesson;
+use App\Models\Reviewer;
 use App\Models\User;
 use App\Services\CourseService;
 use Illuminate\Http\RedirectResponse;
@@ -83,10 +84,22 @@ class CourseController extends Controller
         $lessons = $course->lessons
             ->map(fn (Lesson $lesson): array => $this->lessonData($lesson));
 
+        $reviewers = $course->reviewers()
+            ->withCount(['items', 'lessons'])
+            ->orderBy('title')
+            ->get()
+            ->map(fn (Reviewer $reviewer): array => [
+                'id' => $reviewer->id,
+                'title' => $reviewer->title,
+                'items_count' => $reviewer->items_count ?? 0,
+                'lessons_count' => $reviewer->lessons_count ?? 0,
+            ]);
+
         return Inertia::render('courses/show', [
             'course' => $this->courseDetail($course),
             'periods' => $periods,
             'lessons' => $lessons,
+            'reviewers' => $reviewers,
             'materialTypeOptions' => LessonMaterialType::options(),
         ]);
     }

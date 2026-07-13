@@ -32,9 +32,9 @@ export default function CoursesIndex({
     categoryOptions,
 }: CoursesIndexProps) {
     const [search, setSearch] = useState('');
-    const [category, setCategory] = useState<CourseCategory | typeof allCategories>(
-        allCategories,
-    );
+    const [category, setCategory] = useState<
+        CourseCategory | typeof allCategories
+    >(allCategories);
 
     const visibleCourses = useMemo(() => {
         const normalizedSearch = search.trim().toLowerCase();
@@ -80,9 +80,7 @@ export default function CoursesIndex({
                         <p className="font-mono text-xs font-medium text-muted-foreground uppercase">
                             Library
                         </p>
-                        <h1 className="mt-2 text-3xl font-semibold">
-                            Courses
-                        </h1>
+                        <h1 className="mt-2 text-3xl font-semibold">Courses</h1>
                     </div>
                     <Button asChild>
                         <Link href={createCourse()}>
@@ -94,17 +92,13 @@ export default function CoursesIndex({
 
                 <div className="grid gap-4 md:grid-cols-3">
                     <section className="rounded-lg border border-border bg-card p-5">
-                        <p className="text-sm text-muted-foreground">
-                            Courses
-                        </p>
+                        <p className="text-sm text-muted-foreground">Courses</p>
                         <p className="mt-3 text-3xl font-semibold">
                             {courses.length}
                         </p>
                     </section>
                     <section className="rounded-lg border border-border bg-card p-5">
-                        <p className="text-sm text-muted-foreground">
-                            Lessons
-                        </p>
+                        <p className="text-sm text-muted-foreground">Lessons</p>
                         <p className="mt-3 text-3xl font-semibold">
                             {totalLessons}
                         </p>
@@ -140,7 +134,8 @@ export default function CoursesIndex({
                             value={category}
                             onValueChange={(value) =>
                                 setCategory(
-                                    value as CourseCategory | typeof allCategories,
+                                    value as
+                                        CourseCategory | typeof allCategories,
                                 )
                             }
                         >

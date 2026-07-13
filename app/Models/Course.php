@@ -43,6 +43,14 @@ class Course extends Model
     }
 
     /**
+     * @return HasMany<Reviewer, $this>
+     */
+    public function reviewers(): HasMany
+    {
+        return $this->hasMany(Reviewer::class);
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
