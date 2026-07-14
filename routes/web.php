@@ -4,6 +4,7 @@ use App\Http\Controllers\CourseController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LessonController;
 use App\Http\Controllers\ReviewerController;
+use App\Http\Controllers\ReviewerImportController;
 use App\Http\Controllers\ReviewerQuizController;
 use Illuminate\Support\Facades\Route;
 
@@ -26,6 +27,11 @@ Route::middleware(['auth', 'verified'])->scopeBindings()->group(function () {
         ->name('courses.lessons.inline');
     Route::get('courses/{course}/lessons/{lesson}/download', [LessonController::class, 'download'])
         ->name('courses.lessons.download');
+
+    Route::get('reviewers/import/template', [ReviewerImportController::class, 'template'])
+        ->name('reviewers.import.template');
+    Route::post('reviewers/import/parse', [ReviewerImportController::class, 'parse'])
+        ->name('reviewers.import.parse');
 
     Route::resource('reviewers', ReviewerController::class)
         ->only(['index', 'show', 'edit', 'update', 'destroy']);

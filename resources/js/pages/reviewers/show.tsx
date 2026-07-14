@@ -129,16 +129,23 @@ export default function ShowReviewer({ reviewer }: ShowReviewerProps) {
                                 key={item.id ?? index}
                                 className="grid gap-2 p-4 sm:grid-cols-[1fr_2fr] sm:gap-6"
                             >
-                                <div className="flex items-baseline gap-2">
-                                    <span className="font-mono text-xs text-muted-foreground">
-                                        {index + 1}
-                                    </span>
-                                    <span className="font-semibold">
-                                        {item.term}
-                                    </span>
+                                <div className="flex flex-col items-baseline gap-1">
+                                    <div className="flex items-baseline gap-2">
+                                        <span className="font-mono text-xs text-muted-foreground">
+                                            {index + 1}
+                                        </span>
+                                        <span className="font-semibold">
+                                            {item.term}
+                                        </span>
+                                    </div>
+                                    {item.group && (
+                                        <span className="text-xs text-muted-foreground">
+                                            {item.group}
+                                        </span>
+                                    )}
                                 </div>
                                 <p className="text-sm text-muted-foreground">
-                                    {item.definition}
+                                    {item.definitions.join(' · ')}
                                 </p>
                             </div>
                         ))}

@@ -3,7 +3,8 @@ export type QuizType = 'multiple_choice' | 'identification' | 'enumeration';
 export type QuizItem = {
     id: number;
     term: string;
-    definition: string;
+    definitions: string[];
+    group: string | null;
 };
 
 export type MultipleChoiceQuestion = {
@@ -20,6 +21,7 @@ export type IdentificationQuestion = {
 };
 
 export type EnumerationQuestion = {
+    group: string | null;
     prompt: string;
     expectedTerms: string[];
 };

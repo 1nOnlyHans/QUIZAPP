@@ -21,8 +21,25 @@ class ReviewerItemFactory extends Factory
         return [
             'reviewer_id' => Reviewer::factory(),
             'term' => fake()->unique()->word(),
-            'definition' => fake()->sentence(),
+            'group_name' => null,
             'position' => 0,
         ];
+    }
+
+    /**
+     * Configure the model factory.
+     */
+    public function configure(): static
+    {
+        return $this->afterCreating(function (ReviewerItem $item) {
+            if ($item->definitions()->exists()) {
+                return;
+            }
+
+            $item->definitions()->create([
+                'definition' => fake()->sentence(),
+                'position' => 0,
+            ]);
+        });
     }
 }

@@ -44,7 +44,9 @@ class UpdateReviewerRequest extends FormRequest
             ],
             'items' => ['required', 'array', 'min:1'],
             'items.*.term' => ['required', 'string', 'max:255'],
-            'items.*.definition' => ['required', 'string', 'max:2000'],
+            'items.*.group' => ['nullable', 'string', 'max:255'],
+            'items.*.definitions' => ['required', 'array', 'min:1'],
+            'items.*.definitions.*' => ['required', 'string', 'max:2000'],
         ];
     }
 }

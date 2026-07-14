@@ -65,7 +65,7 @@ class ReviewerController extends Controller
     {
         Gate::authorize('view', $reviewer);
 
-        $reviewer->load(['course', 'items', 'lessons.academicPeriod']);
+        $reviewer->load(['course', 'items.definitions', 'lessons.academicPeriod']);
 
         return Inertia::render('reviewers/show', [
             'reviewer' => $this->reviewerDetail($reviewer),
@@ -76,7 +76,7 @@ class ReviewerController extends Controller
     {
         Gate::authorize('update', $reviewer);
 
-        $reviewer->load(['course', 'items', 'lessons']);
+        $reviewer->load(['course', 'items.definitions', 'lessons']);
 
         return Inertia::render('reviewers/edit', [
             'reviewer' => $this->reviewerDetail($reviewer),
@@ -140,7 +140,8 @@ class ReviewerController extends Controller
                 ->map(fn (ReviewerItem $item): array => [
                     'id' => $item->id,
                     'term' => $item->term,
-                    'definition' => $item->definition,
+                    'group' => $item->group_name,
+                    'definitions' => $item->definitions->pluck('definition')->all(),
                     'position' => $item->position,
                 ])
                 ->all(),

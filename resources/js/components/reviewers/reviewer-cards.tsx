@@ -28,7 +28,7 @@ function Flashcard({ item, index }: { item: ReviewerItem; index: number }) {
                 {flipped ? 'Definition' : `Term ${index + 1}`}
             </span>
             <span className="text-2xl font-semibold text-balance">
-                {flipped ? item.definition : item.term}
+                {flipped ? item.definitions.join(' · ') : item.term}
             </span>
             <span className="mt-2 text-xs text-muted-foreground">
                 Click to {flipped ? 'see term' : 'reveal definition'}

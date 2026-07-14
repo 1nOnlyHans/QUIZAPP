@@ -32,7 +32,7 @@ class ReviewerQuizController extends Controller
     {
         Gate::authorize('view', $reviewer);
 
-        $reviewer->load('items');
+        $reviewer->load('items.definitions');
 
         abort_if($reviewer->items->isEmpty(), 404);
 
@@ -54,7 +54,8 @@ class ReviewerQuizController extends Controller
                     ->map(fn (ReviewerItem $item): array => [
                         'id' => $item->id,
                         'term' => $item->term,
-                        'definition' => $item->definition,
+                        'group' => $item->group_name,
+                        'definitions' => $item->definitions->pluck('definition')->all(),
                     ])
                     ->all(),
             ],

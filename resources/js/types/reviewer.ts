@@ -1,7 +1,8 @@
 export type ReviewerItem = {
     id?: number;
     term: string;
-    definition: string;
+    definitions: string[];
+    group: string | null;
     position: number;
 };
 

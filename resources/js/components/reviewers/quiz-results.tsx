@@ -34,7 +34,15 @@ export default function QuizResults({
                 </p>
                 {result.type === 'enumeration' ? (
                     <p className="mt-3 text-3xl font-semibold">
-                        {result.matched.length} / {result.expectedCount}
+                        {result.groups.reduce(
+                            (total, group) => total + group.matched.length,
+                            0,
+                        )}{' '}
+                        /{' '}
+                        {result.groups.reduce(
+                            (total, group) => total + group.expectedCount,
+                            0,
+                        )}
                     </p>
                 ) : (
                     <p className="mt-3 text-3xl font-semibold">
@@ -44,39 +52,51 @@ export default function QuizResults({
             </div>
 
             {result.type === 'enumeration' ? (
-                <div className="grid gap-4 sm:grid-cols-3">
-                    <div className="rounded-lg border border-border bg-card p-4">
-                        <p className="text-sm font-medium text-green-600">
-                            Remembered
-                        </p>
-                        <ul className="mt-2 space-y-1 text-sm">
-                            {result.matched.map((term) => (
-                                <li key={term}>{term}</li>
-                            ))}
-                        </ul>
-                    </div>
-                    <div className="rounded-lg border border-border bg-card p-4">
-                        <p className="text-sm font-medium text-red-600">
-                            Missed
-                        </p>
-                        <ul className="mt-2 space-y-1 text-sm">
-                            {result.missed.map((term) => (
-                                <li key={term}>{term}</li>
-                            ))}
-                        </ul>
-                    </div>
-                    {result.extra.length > 0 && (
-                        <div className="rounded-lg border border-border bg-card p-4">
-                            <p className="text-sm font-medium text-muted-foreground">
-                                Not recognized
-                            </p>
-                            <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-                                {result.extra.map((term, index) => (
-                                    <li key={index}>{term}</li>
-                                ))}
-                            </ul>
+                <div className="space-y-6">
+                    {result.groups.map((group, groupIndex) => (
+                        <div key={groupIndex} className="space-y-2">
+                            {result.groups.length > 1 && (
+                                <p className="text-sm font-medium text-muted-foreground">
+                                    {group.prompt} — {group.matched.length} /{' '}
+                                    {group.expectedCount}
+                                </p>
+                            )}
+                            <div className="grid gap-4 sm:grid-cols-3">
+                                <div className="rounded-lg border border-border bg-card p-4">
+                                    <p className="text-sm font-medium text-green-600">
+                                        Remembered
+                                    </p>
+                                    <ul className="mt-2 space-y-1 text-sm">
+                                        {group.matched.map((term) => (
+                                            <li key={term}>{term}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                                <div className="rounded-lg border border-border bg-card p-4">
+                                    <p className="text-sm font-medium text-red-600">
+                                        Missed
+                                    </p>
+                                    <ul className="mt-2 space-y-1 text-sm">
+                                        {group.missed.map((term) => (
+                                            <li key={term}>{term}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                                {group.extra.length > 0 && (
+                                    <div className="rounded-lg border border-border bg-card p-4">
+                                        <p className="text-sm font-medium text-muted-foreground">
+                                            Not recognized
+                                        </p>
+                                        <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+                                            {group.extra.map((term, index) => (
+                                                <li key={index}>{term}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    )}
+                    ))}
                 </div>
             ) : (
                 <div className="divide-y divide-border rounded-lg border border-border bg-card">

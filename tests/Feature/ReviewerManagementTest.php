@@ -6,6 +6,7 @@ use App\Models\AcademicPeriod;
 use App\Models\Course;
 use App\Models\Lesson;
 use App\Models\Reviewer;
+use App\Models\ReviewerItem;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -34,8 +35,12 @@ class ReviewerManagementTest extends TestCase
                 'description' => 'Core terms',
                 'lesson_ids' => [$lessonA->id, $lessonB->id],
                 'items' => [
-                    ['term' => 'Pointer', 'definition' => 'Stores a memory address'],
-                    ['term' => 'Reference', 'definition' => 'An alias for a variable'],
+                    [
+                        'term' => 'Pointer',
+                        'definitions' => ['Stores a memory address', 'Holds the address of a variable'],
+                        'group' => 'Memory',
+                    ],
+                    ['term' => 'Reference', 'definitions' => ['An alias for a variable']],
                 ],
             ])
             ->assertSessionHasNoErrors()
@@ -50,11 +55,17 @@ class ReviewerManagementTest extends TestCase
             $reviewer->lessons()->pluck('lessons.id')->all(),
         );
 
-        $items = $reviewer->items()->get();
+        $items = $reviewer->items()->with('definitions')->get();
         $this->assertCount(2, $items);
         $this->assertSame('Pointer', $items[0]->term);
+        $this->assertSame('Memory', $items[0]->group_name);
         $this->assertSame(0, $items[0]->position);
+        $this->assertSame(
+            ['Stores a memory address', 'Holds the address of a variable'],
+            $items[0]->definitions->pluck('definition')->all(),
+        );
         $this->assertSame('Reference', $items[1]->term);
+        $this->assertNull($items[1]->group_name);
         $this->assertSame(1, $items[1]->position);
     }
 
@@ -77,11 +88,11 @@ class ReviewerManagementTest extends TestCase
             ->post(route('courses.reviewers.store', $course), [
                 'title' => 'Missing definitions',
                 'items' => [
-                    ['term' => 'Only term', 'definition' => ''],
-                    ['term' => '', 'definition' => 'Only definition'],
+                    ['term' => 'Only term', 'definitions' => []],
+                    ['term' => '', 'definitions' => ['Only definition']],
                 ],
             ])
-            ->assertSessionHasErrors(['items.0.definition', 'items.1.term']);
+            ->assertSessionHasErrors(['items.0.definitions', 'items.1.term']);
 
         $this
             ->actingAs($user)
@@ -89,7 +100,7 @@ class ReviewerManagementTest extends TestCase
                 'title' => 'Cross-course lesson',
                 'lesson_ids' => [$otherCourseLesson->id],
                 'items' => [
-                    ['term' => 'Term', 'definition' => 'Definition'],
+                    ['term' => 'Term', 'definitions' => ['Definition']],
                 ],
             ])
             ->assertSessionHasErrors('lesson_ids.0');
@@ -104,9 +115,7 @@ class ReviewerManagementTest extends TestCase
 
         $reviewer = Reviewer::factory()->for($course)->create();
         $reviewer->lessons()->sync([$lessonA->id]);
-        $reviewer->items()->createMany([
-            ['term' => 'Old term', 'definition' => 'Old definition', 'position' => 0],
-        ]);
+        $this->seedItem($reviewer, 'Old term', ['Old definition']);
 
         $this
             ->actingAs($user)
@@ -114,7 +123,7 @@ class ReviewerManagementTest extends TestCase
                 'title' => 'Updated title',
                 'lesson_ids' => [$lessonB->id],
                 'items' => [
-                    ['term' => 'New term', 'definition' => 'New definition'],
+                    ['term' => 'New term', 'definitions' => ['New definition']],
                 ],
             ])
             ->assertSessionHasNoErrors()
@@ -125,12 +134,13 @@ class ReviewerManagementTest extends TestCase
         $this->assertSame('Updated title', $reviewer->title);
         $this->assertSame([$lessonB->id], $reviewer->lessons()->pluck('lessons.id')->all());
 
-        $items = $reviewer->items()->get();
+        $items = $reviewer->items()->with('definitions')->get();
         $this->assertCount(1, $items);
         $this->assertSame('New term', $items[0]->term);
+        $this->assertSame(['New definition'], $items[0]->definitions->pluck('definition')->all());
     }
 
-    public function test_deleting_a_reviewer_cascades_items_and_pivot(): void
+    public function test_deleting_a_reviewer_cascades_items_definitions_and_pivot(): void
     {
         $user = User::factory()->create();
         $course = Course::factory()->for($user)->create();
@@ -138,10 +148,9 @@ class ReviewerManagementTest extends TestCase
 
         $reviewer = Reviewer::factory()->for($course)->create();
         $reviewer->lessons()->sync([$lesson->id]);
-        $reviewer->items()->createMany([
-            ['term' => 'Term', 'definition' => 'Definition', 'position' => 0],
-        ]);
+        $item = $this->seedItem($reviewer, 'Term', ['Definition']);
         $reviewerId = $reviewer->id;
+        $itemId = $item->id;
 
         $this
             ->actingAs($user)
@@ -150,6 +159,7 @@ class ReviewerManagementTest extends TestCase
 
         $this->assertNull($reviewer->fresh());
         $this->assertDatabaseMissing('reviewer_items', ['reviewer_id' => $reviewerId]);
+        $this->assertDatabaseMissing('reviewer_item_definitions', ['reviewer_item_id' => $itemId]);
         $this->assertDatabaseMissing('lesson_reviewer', ['reviewer_id' => $reviewerId]);
     }
 
@@ -164,7 +174,7 @@ class ReviewerManagementTest extends TestCase
             ->actingAs($student)
             ->post(route('courses.reviewers.store', $course), [
                 'title' => 'Unauthorized',
-                'items' => [['term' => 'Term', 'definition' => 'Definition']],
+                'items' => [['term' => 'Term', 'definitions' => ['Definition']]],
             ])
             ->assertForbidden();
 
@@ -174,7 +184,7 @@ class ReviewerManagementTest extends TestCase
             ->actingAs($student)
             ->patch(route('reviewers.update', $reviewer), [
                 'title' => 'Hijack',
-                'items' => [['term' => 'Term', 'definition' => 'Definition']],
+                'items' => [['term' => 'Term', 'definitions' => ['Definition']]],
             ])
             ->assertForbidden();
         $this->actingAs($student)->delete(route('reviewers.destroy', $reviewer))->assertForbidden();
@@ -209,5 +219,25 @@ class ReviewerManagementTest extends TestCase
     private function period(): AcademicPeriod
     {
         return AcademicPeriod::query()->ordered()->firstOrFail();
+    }
+
+    /**
+     * @param  list<string>  $definitions
+     */
+    private function seedItem(Reviewer $reviewer, string $term, array $definitions, ?string $group = null, int $position = 0): ReviewerItem
+    {
+        $item = $reviewer->items()->create([
+            'term' => $term,
+            'group_name' => $group,
+            'position' => $position,
+        ]);
+
+        $item->definitions()->createMany(array_map(
+            static fn (string $definition, int $index): array => ['definition' => $definition, 'position' => $index],
+            $definitions,
+            array_keys($definitions),
+        ));
+
+        return $item;
     }
 }

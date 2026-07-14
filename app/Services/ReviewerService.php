@@ -68,16 +68,31 @@ class ReviewerService
     {
         $reviewer->items()->delete();
 
-        $items = [];
-
-        foreach (array_values($data['items'] ?? []) as $position => $item) {
-            $items[] = [
-                'term' => (string) $item['term'],
-                'definition' => (string) $item['definition'],
+        foreach (array_values($data['items'] ?? []) as $position => $itemData) {
+            $item = $reviewer->items()->create([
+                'term' => (string) $itemData['term'],
+                'group_name' => filled($itemData['group'] ?? null)
+                    ? trim((string) $itemData['group'])
+                    : null,
                 'position' => $position,
-            ];
-        }
+            ]);
 
-        $reviewer->items()->createMany($items);
+            $definitions = array_values(array_filter(
+                array_map(
+                    static fn (mixed $definition): string => trim((string) $definition),
+                    $itemData['definitions'] ?? [],
+                ),
+                static fn (string $definition): bool => $definition !== '',
+            ));
+
+            $item->definitions()->createMany(array_map(
+                static fn (string $definition, int $definitionPosition): array => [
+                    'definition' => $definition,
+                    'position' => $definitionPosition,
+                ],
+                $definitions,
+                array_keys($definitions),
+            ));
+        }
     }
 }

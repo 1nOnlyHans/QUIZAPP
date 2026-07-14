@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Course;
 use App\Models\Reviewer;
+use App\Models\ReviewerItem;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -26,11 +27,9 @@ class ReviewerQuizTest extends TestCase
         $user = User::factory()->create();
         $course = Course::factory()->for($user)->create();
         $reviewer = Reviewer::factory()->for($course)->create();
-        $reviewer->items()->createMany([
-            ['term' => 'Alpha', 'definition' => 'First', 'position' => 0],
-            ['term' => 'Beta', 'definition' => 'Second', 'position' => 1],
-            ['term' => 'Gamma', 'definition' => 'Third', 'position' => 2],
-        ]);
+        $this->seedItem($reviewer, 'Alpha', ['First'], position: 0);
+        $this->seedItem($reviewer, 'Beta', ['Second'], position: 1);
+        $this->seedItem($reviewer, 'Gamma', ['Third'], position: 2);
 
         $this
             ->actingAs($user)
@@ -46,10 +45,8 @@ class ReviewerQuizTest extends TestCase
         $user = User::factory()->create();
         $course = Course::factory()->for($user)->create();
         $reviewer = Reviewer::factory()->for($course)->create();
-        $reviewer->items()->createMany([
-            ['term' => 'Alpha', 'definition' => 'First', 'position' => 0],
-            ['term' => 'Beta', 'definition' => 'Second', 'position' => 1],
-        ]);
+        $this->seedItem($reviewer, 'Alpha', ['First'], position: 0);
+        $this->seedItem($reviewer, 'Beta', ['Second'], position: 1);
 
         $this
             ->actingAs($user)
@@ -59,7 +56,26 @@ class ReviewerQuizTest extends TestCase
                 ->where('type', 'multiple_choice')
                 ->where('count', 2)
                 ->where('timeLimitMinutes', null)
-                ->has('reviewer.items', 2));
+                ->has('reviewer.items', 2)
+                ->where('reviewer.items.0.definitions', ['First']));
+    }
+
+    public function test_quiz_show_groups_items_by_group_name(): void
+    {
+        $user = User::factory()->create();
+        $course = Course::factory()->for($user)->create();
+        $reviewer = Reviewer::factory()->for($course)->create();
+        $this->seedItem($reviewer, 'Executive', ['Enforces laws'], 'Branches of Government', 0);
+        $this->seedItem($reviewer, 'Legislative', ['Makes laws'], 'Branches of Government', 1);
+        $this->seedItem($reviewer, 'Mitochondria', ['Powerhouse of the cell'], 'Types of Cells', 2);
+
+        $this
+            ->actingAs($user)
+            ->get(route('reviewers.quiz.show', $reviewer))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('reviewers/quiz/show')
+                ->where('reviewer.items.0.group', 'Branches of Government')
+                ->where('reviewer.items.2.group', 'Types of Cells'));
     }
 
     public function test_quiz_show_clamps_minutes_query_param(): void
@@ -67,7 +83,7 @@ class ReviewerQuizTest extends TestCase
         $user = User::factory()->create();
         $course = Course::factory()->for($user)->create();
         $reviewer = Reviewer::factory()->for($course)->create();
-        $reviewer->items()->create(['term' => 'Alpha', 'definition' => 'First', 'position' => 0]);
+        $this->seedItem($reviewer, 'Alpha', ['First'], position: 0);
 
         $this
             ->actingAs($user)
@@ -99,10 +115,8 @@ class ReviewerQuizTest extends TestCase
         $user = User::factory()->create();
         $course = Course::factory()->for($user)->create();
         $reviewer = Reviewer::factory()->for($course)->create();
-        $reviewer->items()->createMany([
-            ['term' => 'Alpha', 'definition' => 'First', 'position' => 0],
-            ['term' => 'Beta', 'definition' => 'Second', 'position' => 1],
-        ]);
+        $this->seedItem($reviewer, 'Alpha', ['First'], position: 0);
+        $this->seedItem($reviewer, 'Beta', ['Second'], position: 1);
 
         $this
             ->actingAs($user)
@@ -136,9 +150,29 @@ class ReviewerQuizTest extends TestCase
         $student = User::factory()->create();
         $course = Course::factory()->for($owner)->create();
         $reviewer = Reviewer::factory()->for($course)->create();
-        $reviewer->items()->create(['term' => 'Alpha', 'definition' => 'First', 'position' => 0]);
+        $this->seedItem($reviewer, 'Alpha', ['First'], position: 0);
 
         $this->actingAs($student)->get(route('reviewers.quiz.create', $reviewer))->assertForbidden();
         $this->actingAs($student)->get(route('reviewers.quiz.show', $reviewer))->assertForbidden();
+    }
+
+    /**
+     * @param  list<string>  $definitions
+     */
+    private function seedItem(Reviewer $reviewer, string $term, array $definitions, ?string $group = null, int $position = 0): ReviewerItem
+    {
+        $item = $reviewer->items()->create([
+            'term' => $term,
+            'group_name' => $group,
+            'position' => $position,
+        ]);
+
+        $item->definitions()->createMany(array_map(
+            static fn (string $definition, int $index): array => ['definition' => $definition, 'position' => $index],
+            $definitions,
+            array_keys($definitions),
+        ));
+
+        return $item;
     }
 }
